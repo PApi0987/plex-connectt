@@ -1,0 +1,16 @@
+{
+  "name": "plex-connect-backend",
+  "version": "1.0.0",
+  "description": "Backend for Plex Connect VTU & Utility Platform",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Plex Hub",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
+}
