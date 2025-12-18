@@ -1,118 +1,72 @@
 // controllers/userController.js
-
-// In-memory storage (temporary)
-const users = [];
-const transactions = [];
+import { users, transactions } from '../utils/store.js';
 
 // Register user
 export const registerUser = (req, res) => {
   const { name, email } = req.body;
 
   if (!name || !email) {
-    return res.status(400).json({
-      status: false,
-      message: 'Name and email are required'
-    });
+    return res.status(400).json({ status: false, message: 'Name and email required' });
   }
 
-  const existingUser = users.find(u => u.email === email);
-  if (existingUser) {
-    return res.status(400).json({
-      status: false,
-      message: 'User already exists'
-    });
+  const existing = users.find(u => u.email === email);
+  if (existing) {
+    return res.status(400).json({ status: false, message: 'User already exists' });
   }
 
-  const newUser = {
+  const user = {
     id: users.length + 1,
     name,
     email,
     wallet_balance: 0
   };
 
-  users.push(newUser);
+  users.push(user);
 
-  res.status(201).json({
-    status: true,
-    message: 'User registered successfully',
-    user: newUser
-  });
+  res.status(201).json({ status: true, user });
 };
 
-// Get all users
+// Get users
 export const getUsers = (req, res) => {
-  res.json({
-    status: true,
-    users
-  });
+  res.json({ status: true, users });
 };
 
-// 💰 Fund wallet (manual for now)
+// Fund wallet
 export const fundWallet = (req, res) => {
   const { user_id, amount } = req.body;
 
-  if (!user_id || !amount || amount <= 0) {
-    return res.status(400).json({
-      status: false,
-      message: 'Invalid funding request'
-    });
-  }
-
   const user = users.find(u => u.id === user_id);
-  if (!user) {
-    return res.status(404).json({
-      status: false,
-      message: 'User not found'
-    });
+  if (!user || amount <= 0) {
+    return res.status(400).json({ status: false, message: 'Invalid request' });
   }
 
   user.wallet_balance += amount;
 
-  const transaction = {
+  transactions.push({
     id: transactions.length + 1,
     user_id,
     type: 'FUND',
     amount,
     status: 'SUCCESS',
     date: new Date()
-  };
-
-  transactions.push(transaction);
-
-  res.json({
-    status: true,
-    message: 'Wallet funded successfully',
-    wallet_balance: user.wallet_balance,
-    transaction
   });
+
+  res.json({ status: true, wallet_balance: user.wallet_balance });
 };
 
-// 📊 Get wallet balance
+// Wallet balance
 export const getWalletBalance = (req, res) => {
-  const userId = Number(req.params.userId);
-  const user = users.find(u => u.id === userId);
+  const user = users.find(u => u.id === Number(req.params.userId));
+  if (!user) return res.status(404).json({ status: false, message: 'User not found' });
 
-  if (!user) {
-    return res.status(404).json({
-      status: false,
-      message: 'User not found'
-    });
-  }
-
-  res.json({
-    status: true,
-    wallet_balance: user.wallet_balance
-  });
+  res.json({ status: true, wallet_balance: user.wallet_balance });
 };
 
-// 🧾 Get user transactions
+// User transactions
 export const getUserTransactions = (req, res) => {
   const userId = Number(req.params.userId);
-
-  const userTx = transactions.filter(tx => tx.user_id === userId);
-
   res.json({
     status: true,
-    transactions: userTx
+    transactions: transactions.filter(t => t.user_id === userId)
   });
 };
