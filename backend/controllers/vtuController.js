@@ -1,84 +1,93 @@
-// controllers/vtuController.js
 import axios from 'axios';
 
 const API_BASE = 'https://www.cheapdatahub.ng/api/v1/resellers';
 const TOKEN = process.env.CHEAPDATAHUB_API_TOKEN;
 
-// Helper for headers
 const headers = {
-  'Authorization': `Token ${TOKEN}`,
+  Authorization: `Token ${TOKEN}`,
   'Content-Type': 'application/json'
 };
 
-// ----------------- Data Purchase -----------------
+// DATA
 export const purchaseData = async (req, res) => {
-  const { bundle_id, phone_number } = req.body;
-
   try {
-    const response = await axios.post(`${API_BASE}/data/purchase/`, {
-      bundle_id,
-      phone_number
-    }, { headers });
+    const { bundle_id, phone_number } = req.body;
 
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ status: false, message: 'Data purchase failed', error: error.response?.data });
+    const response = await axios.post(
+      `${API_BASE}/data/purchase/`,
+      { bundle_id, phone_number },
+      { headers }
+    );
+
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: 'Data purchase failed',
+      error: err.response?.data || err.message
+    });
   }
 };
 
-// ----------------- Airtime Purchase -----------------
+// AIRTIME
 export const purchaseAirtime = async (req, res) => {
-  const { provider_id, phone_number, amount } = req.body;
-
   try {
-    const response = await axios.post(`${API_BASE}/airtime/purchase/`, {
-      provider_id,
-      phone_number,
-      amount
-    }, { headers });
+    const { provider_id, phone_number, amount } = req.body;
 
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ status: false, message: 'Airtime purchase failed', error: error.response?.data });
+    const response = await axios.post(
+      `${API_BASE}/airtime/purchase/`,
+      { provider_id, phone_number, amount },
+      { headers }
+    );
+
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: 'Airtime purchase failed',
+      error: err.response?.data || err.message
+    });
   }
 };
 
-// ----------------- Cable Subscription -----------------
+// CABLE
 export const purchaseCable = async (req, res) => {
-  const { plan_id, cardnumber, phone } = req.body;
-
   try {
-    const response = await axios.post(`${API_BASE}/cable/purchase/`, {
-      plan_id,
-      cardnumber,
-      phone
-    }, { headers });
+    const { plan_id, cardnumber, phone } = req.body;
 
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ status: false, message: 'Cable subscription failed', error: error.response?.data });
+    const response = await axios.post(
+      `${API_BASE}/cable/purchase/`,
+      { plan_id, cardnumber, phone },
+      { headers }
+    );
+
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: 'Cable subscription failed',
+      error: err.response?.data || err.message
+    });
   }
 };
 
-// ----------------- Electricity Purchase -----------------
+// ELECTRICITY
 export const purchaseElectricity = async (req, res) => {
-  const { disco_id, meter_number, amount, phone, meter_type } = req.body;
-
   try {
-    const response = await axios.post(`${API_BASE}/electricity/purchase/`, {
-      disco_id,
-      meter_number,
-      amount,
-      phone,
-      meter_type
-    }, { headers });
+    const { disco_id, meter_number, amount, phone, meter_type } = req.body;
 
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ status: false, message: 'Electricity purchase failed', error: error.response?.data });
+    const response = await axios.post(
+      `${API_BASE}/electricity/purchase/`,
+      { disco_id, meter_number, amount, phone, meter_type },
+      { headers }
+    );
+
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: 'Electricity purchase failed',
+      error: err.response?.data || err.message
+    });
   }
 };
