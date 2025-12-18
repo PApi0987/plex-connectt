@@ -1,3 +1,5 @@
+// routes/vtuRoutes.js
+
 import express from 'express';
 import {
   purchaseData,
@@ -8,16 +10,16 @@ import {
 
 const router = express.Router();
 
-// Data
+// ----------------- DATA -----------------
 router.post('/data', purchaseData);
 
-// Airtime
+// ----------------- AIRTIME -----------------
 router.post('/airtime', purchaseAirtime);
 
-// Cable
+// ----------------- CABLE -----------------
 router.post('/cable', purchaseCable);
 
-// Electricity
+// ----------------- ELECTRICITY -----------------
 router.post('/electricity', purchaseElectricity);
 
 export default router;
