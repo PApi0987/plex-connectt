@@ -3,7 +3,9 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import morgan from 'morgan';
 
+// Routes
 import vtuRoutes from './routes/vtuRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 
@@ -16,6 +18,7 @@ app.use(morgan('dev'));
 
 // Routes
 app.use('/api/vtu', vtuRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/', (req, res) => {
@@ -33,7 +36,7 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
+// Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
