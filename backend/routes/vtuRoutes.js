@@ -1,4 +1,3 @@
-// routes/vtuRoutes.js
 import express from 'express';
 import {
   purchaseData,
