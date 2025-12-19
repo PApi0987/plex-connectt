@@ -1,0 +1,19 @@
+export const adminAuth = (req, res, next) => {
+  const adminKey = req.headers['x-admin-key'];
+
+  if (!adminKey) {
+    return res.status(401).json({
+      status: false,
+      message: 'Admin key required'
+    });
+  }
+
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return res.status(403).json({
+      status: false,
+      message: 'Invalid admin key'
+    });
+  }
+
+  next();
+};
