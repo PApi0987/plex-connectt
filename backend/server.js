@@ -12,39 +12,24 @@ dotenv.config();
 
 const app = express();
 
-/* ======================
-   MIDDLEWARES
-====================== */
+// ================= MIDDLEWARES =================
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-/* ======================
-   ROUTES
-====================== */
+// ================= ROUTES =================
+app.use('/api/vtu', vtuRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
-// Base test route
+// ================= ROOT TEST ROUTE =================
 app.get('/', (req, res) => {
   res.status(200).json({
-    status: true,
-    message: '🚀 Plex Connect Backend is LIVE'
+    message: 'Plex Connect Backend is live!'
   });
 });
 
-// User routes
-app.use('/api/users', userRoutes);
-
-// VTU routes (data, airtime, cable, electricity)
-app.use('/api/vtu', vtuRoutes);
-
-// Admin routes (protected by ADMIN_API_KEY)
-app.use('/api/admin', adminRoutes);
-
-/* ======================
-   ERROR HANDLING
-====================== */
-
-// 404 handler
+// ================= 404 HANDLER =================
 app.use((req, res) => {
   res.status(404).json({
     status: false,
@@ -52,21 +37,9 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('❌ ERROR:', err.stack);
-  res.status(500).json({
-    status: false,
-    message: 'Internal server error',
-    error: err.message
-  });
-});
-
-/* ======================
-   SERVER
-====================== */
-const PORT = process.env.PORT || 5000;
+// ================= SERVER =================
+const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
