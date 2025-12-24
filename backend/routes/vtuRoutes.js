@@ -1,5 +1,6 @@
 import express from "express";
 import { getDataPlans, getAirtimeProviders, getCablePlans, getElectricityDiscos } from "../controllers/vtuController.js";
+import { users } from "../data/users.js";
 
 const router = express.Router();
 
