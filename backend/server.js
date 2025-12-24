@@ -6,7 +6,9 @@ import morgan from 'morgan';
 import vtuRoutes from './routes/vtuRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import walletRoutes from "./routes/walletRoutes.js";
 
+app.use("/api/wallet", walletRoutes);
 dotenv.config();
 
 const app = express();
