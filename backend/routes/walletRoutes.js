@@ -4,15 +4,22 @@ import fetch from "node-fetch";
 
 const router = express.Router();
 
-// 🔹 MOCK WALLET (replace with DB later)
+// 🔹 Temporary wallet balance (replace with DB later)
 let walletBalance = 0;
 
 /**
- * INITIATE PAYSTACK PAYMENT
+ * INIT PAYSTACK PAYMENT
  * POST /api/wallet/paystack/init
  */
 router.post("/paystack/init", async (req, res) => {
   const { email, amount } = req.body;
+
+  if (!email || !amount) {
+    return res.status(400).json({
+      status: false,
+      message: "Email and amount are required",
+    });
+  }
 
   try {
     const response = await fetch(
@@ -25,7 +32,7 @@ router.post("/paystack/init", async (req, res) => {
         },
         body: JSON.stringify({
           email,
-          amount: amount * 100, // Paystack uses kobo
+          amount: amount * 100, // kobo
         }),
       }
     );
@@ -35,7 +42,7 @@ router.post("/paystack/init", async (req, res) => {
     if (!data.status) {
       return res.status(400).json({
         status: false,
-        message: "Payment initialization failed",
+        message: "Unable to initialize payment",
       });
     }
 
@@ -45,8 +52,11 @@ router.post("/paystack/init", async (req, res) => {
       reference: data.data.reference,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ status: false, message: "Server error" });
+    console.error("Paystack init error:", error);
+    res.status(500).json({
+      status: false,
+      message: "Server error",
+    });
   }
 });
 
@@ -56,6 +66,13 @@ router.post("/paystack/init", async (req, res) => {
  */
 router.post("/paystack/verify", async (req, res) => {
   const { reference, amount } = req.body;
+
+  if (!reference || !amount) {
+    return res.status(400).json({
+      status: false,
+      message: "Reference and amount required",
+    });
+  }
 
   try {
     const response = await fetch(
@@ -84,8 +101,11 @@ router.post("/paystack/verify", async (req, res) => {
       message: "Payment verification failed",
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ status: false, message: "Server error" });
+    console.error("Paystack verify error:", error);
+    res.status(500).json({
+      status: false,
+      message: "Server error",
+    });
   }
 });
 
