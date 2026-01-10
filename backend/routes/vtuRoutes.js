@@ -1,12 +1,11 @@
 import express from "express";
-import { getDataPlans, getAirtimeProviders, getCablePlans, getElectricityDiscos } from "../controllers/vtuController.js";
-import { users } from "../data/users.js";
+import { buyData, buyAirtime, buyCable, buyElectricity } from "../controllers/vtuController.js";
 
 const router = express.Router();
 
-router.get("/plans/data", getDataPlans);
-router.get("/plans/airtime", getAirtimeProviders);
-router.get("/plans/cable", getCablePlans);
-router.get("/plans/electricity", getElectricityDiscos);
+router.post("/data", buyData);
+router.post("/airtime", buyAirtime);
+router.post("/cable", buyCable);
+router.post("/electricity", buyElectricity);
 
 export default router;
