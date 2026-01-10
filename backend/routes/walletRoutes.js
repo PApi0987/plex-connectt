@@ -1,78 +1,92 @@
 // routes/walletRoutes.js
-import express from 'express';
-import fetch from 'node-fetch'; // npm install node-fetch
-import { v4 as uuidv4 } from 'uuid'; // npm install uuid
+import express from "express";
+import fetch from "node-fetch";
 
 const router = express.Router();
 
-// -----------------------
-// MOCK DATABASE
-// -----------------------
-let users = [
-  { id: 1, name: "John Doe", wallet_balance: 5000, transactions: [] },
-  // Add more users as needed
-];
+// 🔹 MOCK WALLET (replace with DB later)
+let walletBalance = 0;
 
-// -----------------------
-// FUND WALLET VIA PAYSTACK
-// -----------------------
-router.post('/paystack', async (req, res) => {
-  const { reference, user_id, amount } = req.body;
+/**
+ * INITIATE PAYSTACK PAYMENT
+ * POST /api/wallet/paystack/init
+ */
+router.post("/paystack/init", async (req, res) => {
+  const { email, amount } = req.body;
 
   try {
-    // 1️⃣ Verify payment with Paystack
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` }
-    });
+    const response = await fetch(
+      "https://api.paystack.co/transaction/initialize",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          amount: amount * 100, // Paystack uses kobo
+        }),
+      }
+    );
 
     const data = await response.json();
 
-    if (data.status && data.data.status === 'success') {
-      // 2️⃣ Update user's wallet
-      const user = users.find(u => u.id === user_id);
-      if (!user) return res.status(404).json({ status: false, message: "User not found" });
-
-      user.wallet_balance += amount;
-
-      // 3️⃣ Save transaction
-      const transaction = {
-        id: uuidv4(),
-        type: "WALLET FUNDING",
-        amount,
-        reference,
-        date: new Date().toLocaleString()
-      };
-      user.transactions.unshift(transaction);
-
-      return res.json({
-        status: true,
-        message: 'Wallet credited successfully!',
-        wallet_balance: user.wallet_balance,
-        transactions: user.transactions
+    if (!data.status) {
+      return res.status(400).json({
+        status: false,
+        message: "Payment initialization failed",
       });
-    } else {
-      return res.json({ status: false, message: 'Payment verification failed' });
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: false, message: 'Server error' });
+
+    res.json({
+      status: true,
+      authorization_url: data.data.authorization_url,
+      reference: data.data.reference,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: false, message: "Server error" });
   }
 });
 
-// -----------------------
-// GET USER WALLET & TRANSACTIONS
-// -----------------------
-router.get('/:user_id', (req, res) => {
-  const user_id = parseInt(req.params.user_id);
-  const user = users.find(u => u.id === user_id);
-  if (!user) return res.status(404).json({ status: false, message: "User not found" });
+/**
+ * VERIFY PAYSTACK PAYMENT
+ * POST /api/wallet/paystack/verify
+ */
+router.post("/paystack/verify", async (req, res) => {
+  const { reference, amount } = req.body;
 
-  res.json({
-    status: true,
-    wallet_balance: user.wallet_balance,
-    transactions: user.transactions
-  });
+  try {
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.status && data.data.status === "success") {
+      walletBalance += amount;
+
+      return res.json({
+        status: true,
+        message: "Wallet funded successfully",
+        wallet_balance: walletBalance,
+      });
+    }
+
+    res.status(400).json({
+      status: false,
+      message: "Payment verification failed",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: false, message: "Server error" });
+  }
 });
 
 export default router;
