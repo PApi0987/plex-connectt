@@ -1,72 +1,30 @@
-// controllers/userController.js
-import { users, transactions } from '../utils/store.js';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { createUser, findUserByEmail } from "../models/userModel.js";
 
-// Register user
-export const registerUser = (req, res) => {
-  const { name, email } = req.body;
+const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-  if (!name || !email) {
-    return res.status(400).json({ status: false, message: 'Name and email required' });
-  }
+export const signup = async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ message: "All fields required" });
 
-  const existing = users.find(u => u.email === email);
-  if (existing) {
-    return res.status(400).json({ status: false, message: 'User already exists' });
-  }
+  const exists = findUserByEmail(email);
+  if (exists) return res.status(400).json({ message: "Email already exists" });
 
-  const user = {
-    id: users.length + 1,
-    name,
-    email,
-    wallet_balance: 0
-  };
+  const user = await createUser({ name, email, password });
+  const token = generateToken(user.id);
 
-  users.push(user);
-
-  res.status(201).json({ status: true, user });
+  res.status(201).json({ status: true, user: { id: user.id, name, email }, token });
 };
 
-// Get users
-export const getUsers = (req, res) => {
-  res.json({ status: true, users });
-};
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  const user = findUserByEmail(email);
+  if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-// Fund wallet
-export const fundWallet = (req, res) => {
-  const { user_id, amount } = req.body;
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-  const user = users.find(u => u.id === user_id);
-  if (!user || amount <= 0) {
-    return res.status(400).json({ status: false, message: 'Invalid request' });
-  }
-
-  user.wallet_balance += amount;
-
-  transactions.push({
-    id: transactions.length + 1,
-    user_id,
-    type: 'FUND',
-    amount,
-    status: 'SUCCESS',
-    date: new Date()
-  });
-
-  res.json({ status: true, wallet_balance: user.wallet_balance });
-};
-
-// Wallet balance
-export const getWalletBalance = (req, res) => {
-  const user = users.find(u => u.id === Number(req.params.userId));
-  if (!user) return res.status(404).json({ status: false, message: 'User not found' });
-
-  res.json({ status: true, wallet_balance: user.wallet_balance });
-};
-
-// User transactions
-export const getUserTransactions = (req, res) => {
-  const userId = Number(req.params.userId);
-  res.json({
-    status: true,
-    transactions: transactions.filter(t => t.user_id === userId)
-  });
+  const token = generateToken(user.id);
+  res.status(200).json({ status: true, user: { id: user.id, name: user.name, email }, token });
 };
