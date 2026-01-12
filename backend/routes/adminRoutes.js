@@ -1,23 +1,23 @@
-import express from 'express';
-import { adminAuth } from '../middlewares/adminAuth.js';
+import express from "express";
+import { adminAuth } from "../middlewares/adminAuth.js";
 import {
   getAdminStats,
   getAllUsers,
   getAllTransactions
-} from '../controllers/adminController.js';
+} from "../controllers/adminController.js";
 
 const router = express.Router();
 
-// Protect all admin routes
+// Protect all routes
 router.use(adminAuth);
 
-// Admin dashboard stats
-router.get('/stats', getAdminStats);
+// Dashboard stats
+router.get("/stats", getAdminStats);
 
-// View all users
-router.get('/users', getAllUsers);
+// List users
+router.get("/users", getAllUsers);
 
-// View all transactions
-router.get('/transactions', getAllTransactions);
+// List transactions
+router.get("/transactions", getAllTransactions);
 
 export default router;
