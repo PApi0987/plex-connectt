@@ -1,19 +1,26 @@
-export const adminAuth = (req, res, next) => {
-  const adminKey = req.headers['x-admin-key'];
+// middlewares/adminAuth.js
+import jwt from "jsonwebtoken";
 
-  if (!adminKey) {
-    return res.status(401).json({
-      status: false,
-      message: 'Admin key required'
-    });
+const adminAuth = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ status: false, message: "No token provided" });
   }
 
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return res.status(403).json({
-      status: false,
-      message: 'Invalid admin key'
-    });
-  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  next();
+    // Check if token matches admin credentials
+    if (decoded.email !== process.env.ADMIN_EMAIL) {
+      return res.status(403).json({ status: false, message: "Forbidden: Admins only" });
+    }
+
+    req.admin = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ status: false, message: "Invalid token" });
+  }
 };
+
+export default adminAuth;
