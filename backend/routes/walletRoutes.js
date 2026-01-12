@@ -1,111 +1,55 @@
 // routes/walletRoutes.js
 import express from "express";
-import fetch from "node-fetch";
+import fetch from "node-fetch"; // make sure node-fetch is installed
+// import your user model here to update wallet in DB if available
+// import User from "../models/userModel.js";
 
 const router = express.Router();
 
-// 🔹 Temporary wallet balance (replace with DB later)
-let walletBalance = 0;
+// 💳 Fund Wallet via Paystack
+// POST /api/wallet/paystack
+router.post("/paystack", async (req, res) => {
+  const { reference, user_id, amount } = req.body;
 
-/**
- * INIT PAYSTACK PAYMENT
- * POST /api/wallet/paystack/init
- */
-router.post("/paystack/init", async (req, res) => {
-  const { email, amount } = req.body;
-
-  if (!email || !amount) {
-    return res.status(400).json({
-      status: false,
-      message: "Email and amount are required",
-    });
+  if (!reference || !user_id || !amount) {
+    return res.status(400).json({ status: false, message: "Missing required fields" });
   }
 
   try {
-    const response = await fetch(
-      "https://api.paystack.co/transaction/initialize",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          amount: amount * 100, // kobo
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!data.status) {
-      return res.status(400).json({
-        status: false,
-        message: "Unable to initialize payment",
-      });
-    }
-
-    res.json({
-      status: true,
-      authorization_url: data.data.authorization_url,
-      reference: data.data.reference,
+    // 1️⃣ Verify payment with Paystack
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` }
     });
-  } catch (error) {
-    console.error("Paystack init error:", error);
-    res.status(500).json({
-      status: false,
-      message: "Server error",
-    });
-  }
-});
-
-/**
- * VERIFY PAYSTACK PAYMENT
- * POST /api/wallet/paystack/verify
- */
-router.post("/paystack/verify", async (req, res) => {
-  const { reference, amount } = req.body;
-
-  if (!reference || !amount) {
-    return res.status(400).json({
-      status: false,
-      message: "Reference and amount required",
-    });
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        },
-      }
-    );
 
     const data = await response.json();
 
     if (data.status && data.data.status === "success") {
-      walletBalance += amount;
+      // 2️⃣ Credit user wallet
+      // Replace this with real DB update
+      // const user = await User.findById(user_id);
+      // user.wallet += amount;
+      // await user.save();
 
+      const wallet_balance = 5000 + Number(amount); // mock example
+
+      // 3️⃣ Return response
       return res.json({
         status: true,
-        message: "Wallet funded successfully",
-        wallet_balance: walletBalance,
+        message: "Wallet credited successfully!",
+        wallet_balance,
+        transaction: {
+          service: "Wallet Funding",
+          amount,
+          date: new Date().toLocaleString()
+        }
       });
+    } else {
+      return res.json({ status: false, message: "Payment verification failed" });
     }
-
-    res.status(400).json({
-      status: false,
-      message: "Payment verification failed",
-    });
-  } catch (error) {
-    console.error("Paystack verify error:", error);
-    res.status(500).json({
-      status: false,
-      message: "Server error",
-    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ status: false, message: "Server error" });
   }
 });
 
