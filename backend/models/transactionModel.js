@@ -1,11 +1,18 @@
+// ==========================
+// Plex Connect Backend - transactionModel.js
+// ==========================
 import mongoose from "mongoose";
 
-const transactionSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  service: { type: String, required: true },
-  amount: { type: Number, required: true },
-  status: { type: String, default: "success" },
-  date: { type: Date, default: Date.now }
-});
+const transactionSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    service: { type: String, required: true },
+    amount: { type: Number, required: true },
+    status: { type: String, enum: ["pending", "success", "failed"], default: "pending" },
+    reference: { type: String, required: true, unique: true },
+  },
+  { timestamps: true }
+);
 
-export default mongoose.model("Transaction", transactionSchema);
+const Transaction = mongoose.model("Transaction", transactionSchema);
+export default Transaction;
