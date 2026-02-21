@@ -1,62 +1,36 @@
-// controllers/adminController.js
-import User from "../models/userModel.js";
-import Transaction from "../models/transactionModel.js";
+// ==========================
+// Plex Connect Backend - adminController.js
+// ==========================
 import Admin from "../models/adminModel.js";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 
-// GET /api/admin/stats
-export const getAdminStats = async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-    const totalTransactions = await Transaction.countDocuments();
-
-    const transactions = await Transaction.find();
-    const totalVolume = transactions.reduce((sum, tx) => sum + tx.amount, 0);
-
-    const adminData = await Admin.findOne(); // assume single admin
-    const totalProfit = adminData ? adminData.wallet_balance : 0;
-
-    res.json({
-      status: true,
-      data: {
-        totalUsers,
-        totalTransactions,
-        totalVolume,
-        totalProfit,
-        adminWallet: totalProfit
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: false, message: "Server error" });
-  }
+// Generate JWT
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-// GET /api/admin/users
-export const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find().select("-password"); // exclude passwords
-    res.json({
-      status: true,
-      count: users.length,
-      data: users
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: false, message: "Server error" });
-  }
-};
+// @desc    Admin login
+// @route   POST /api/admin/login
+// @access  Public
+export const adminLogin = async (req, res) => {
+  const { email, password } = req.body;
 
-// GET /api/admin/transactions
-export const getAllTransactions = async (req, res) => {
   try {
-    const transactions = await Transaction.find();
-    res.json({
-      status: true,
-      count: transactions.length,
-      data: transactions
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: false, message: "Server error" });
+    const admin = await Admin.findOne({ email });
+    if (admin && (await admin.matchPassword(password))) {
+      res.status(200).json({
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        apiKey: admin.apiKey,
+        token: generateToken(admin._id),
+      });
+    } else {
+      res.status(401).json({ message: "❌ Invalid email or password" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
