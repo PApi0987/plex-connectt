@@ -1,8 +1,16 @@
 import express from "express";
-import { verifyPaystackPayment } from "../controllers/walletController.js";
+import {
+  getWallet,
+  fundWallet,
+  getTransactions,
+} from "../controllers/walletController.js";
+
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/paystack", verifyPaystackPayment);
+router.get("/", protect, getWallet);
+router.post("/fund", protect, fundWallet);
+router.get("/transactions", protect, getTransactions);
 
 export default router;
