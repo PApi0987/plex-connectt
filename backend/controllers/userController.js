@@ -1,54 +1,61 @@
+// ==========================
+// Plex Connect Backend - userController.js
+// ==========================
 import User from "../models/userModel.js";
-import generateToken from "../utils/generateToken.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 
-// @desc Register user
-// @route POST /api/users/register
+const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+// @desc    Register new user
+// @route   POST /api/users/register
+// @access  Public
 export const registerUser = async (req, res) => {
-  const { fullname, email, password } = req.body;
+  const { name, email, password } = req.body;
 
-  if (!fullname || !email || !password) {
-    return res.status(400).json({ message: "All fields required" });
-  }
+  try {
+    const userExists = await User.findOne({ email });
+    if (userExists) return res.status(400).json({ message: "User already exists" });
 
-  const userExists = await User.findOne({ email });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-  if (userExists) {
-    return res.status(400).json({ message: "User already exists" });
-  }
+    const user = await User.create({ name, email, password: hashedPassword });
 
-  const user = await User.create({ fullname, email, password });
-
-  res.status(201).json({
-    _id: user._id,
-    fullname: user.fullname,
-    email: user.email,
-    wallet: user.wallet,
-    token: generateToken(user._id),
-  });
-};
-
-// @desc Login user
-// @route POST /api/users/login
-export const authUser = async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (user && (await user.matchPassword(password))) {
-    res.json({
+    res.status(201).json({
       _id: user._id,
-      fullname: user.fullname,
+      name: user.name,
       email: user.email,
-      wallet: user.wallet,
+      walletBalance: user.walletBalance,
       token: generateToken(user._id),
     });
-  } else {
-    res.status(401).json({ message: "Invalid email or password" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-// @desc Get user profile
-// @route GET /api/users/profile
-export const getUserProfile = async (req, res) => {
-  res.json(req.user);
+// @desc    Login user
+// @route   POST /api/users/login
+// @access  Public
+export const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        walletBalance: user.walletBalance,
+        token: generateToken(user._id),
+      });
+    } else {
+      res.status(401).json({ message: "❌ Invalid email or password" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
