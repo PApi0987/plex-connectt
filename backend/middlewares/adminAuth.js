@@ -1,26 +1,31 @@
-// middlewares/adminAuth.js
-import jwt from "jsonwebtoken";
+// ==========================
+// Plex Connect - adminAuth.js
+// ==========================
 
-const adminAuth = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+import dotenv from "dotenv";
 
-  if (!token) {
-    return res.status(401).json({ status: false, message: "No token provided" });
-  }
+dotenv.config();
 
+export const adminProtect = (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const apiKey = req.headers["x-api-key"];
 
-    // Check if token matches admin credentials
-    if (decoded.email !== process.env.ADMIN_EMAIL) {
-      return res.status(403).json({ status: false, message: "Forbidden: Admins only" });
+    if (!apiKey) {
+      return res.status(401).json({
+        message: "Admin API key required",
+      });
     }
 
-    req.admin = decoded;
+    if (apiKey !== process.env.ADMIN_API_KEY) {
+      return res.status(403).json({
+        message: "Invalid Admin API key",
+      });
+    }
+
     next();
-  } catch (err) {
-    return res.status(401).json({ status: false, message: "Invalid token" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Admin authorization failed",
+    });
   }
 };
-
-export default adminAuth;
