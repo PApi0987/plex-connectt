@@ -1,19 +1,36 @@
-export const buyData = (req, res) => {
-  const { amount, phone_number } = req.body;
-  res.status(200).json({ status: true, message: `Data ${amount} purchased for ${phone_number}` });
-};
+// ==========================
+// Plex Connect Backend - vtuController.js
+// ==========================
+import User from "../models/userModel.js";
+import Transaction from "../models/transactionModel.js";
 
-export const buyAirtime = (req, res) => {
-  const { amount, phone_number } = req.body;
-  res.status(200).json({ status: true, message: `Airtime ${amount} purchased for ${phone_number}` });
-};
+// @desc    Buy service (Data, Airtime, Cable TV, Electricity)
+// @route   POST /api/vtu/buy
+// @access  Private
+export const buyService = async (req, res) => {
+  const { service, amount } = req.body;
+  const userId = req.user._id;
 
-export const buyCable = (req, res) => {
-  const { amount, cardnumber } = req.body;
-  res.status(200).json({ status: true, message: `Cable plan ${amount} purchased for card ${cardnumber}` });
-};
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-export const buyElectricity = (req, res) => {
-  const { amount, meter_number } = req.body;
-  res.status(200).json({ status: true, message: `Electricity ${amount} purchased for meter ${meter_number}` });
+    if (user.walletBalance < amount)
+      return res.status(400).json({ message: "❌ Insufficient wallet balance" });
+
+    user.walletBalance -= amount;
+    await user.save();
+
+    const transaction = await Transaction.create({
+      user: user._id,
+      service,
+      amount,
+      status: "success",
+      reference: `TX${Date.now()}`,
+    });
+
+    res.status(200).json({ walletBalance: user.walletBalance, transaction });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
