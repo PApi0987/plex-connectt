@@ -1,27 +1,47 @@
+// ==========================
+// Plex Connect - authMiddleware.js
+// ==========================
+
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const protect = async (req, res, next) => {
   let token;
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    try {
+  try {
+    // Check Authorization header
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
       token = req.headers.authorization.split(" ")[1];
 
+      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+      // Attach user to request
       req.user = await User.findById(decoded.id).select("-password");
 
-      next();
-    } catch (error) {
-      return res.status(401).json({ message: "Not authorized, token failed" });
-    }
-  }
+      if (!req.user) {
+        return res.status(401).json({
+          message: "Unauthorized — User not found",
+        });
+      }
 
-  if (!token) {
-    return res.status(401).json({ message: "Not authorized, no token" });
+      next();
+    } else {
+      return res.status(401).json({
+        message: "No token provided",
+      });
+    }
+  } catch (error) {
+    console.error("Auth Error:", error.message);
+
+    res.status(401).json({
+      message: "Token failed or expired",
+    });
   }
 };
