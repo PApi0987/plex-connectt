@@ -1,80 +1,99 @@
 // ==========================
-// Plex Connect Backend - server.js (Advanced)
+// Plex Connect Backend - PRO SERVER
 // ==========================
 
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
+
 import connectDB from "./config/db.js";
 
-// Routes
+// ==========================
+// ROUTES IMPORT
+// ==========================
 import vtuRoutes from "./routes/vtuRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
-// Load environment variables
+// ==========================
+// ENV CONFIG
+// ==========================
 dotenv.config();
 
-// Connect to MongoDB
+// ==========================
+// DATABASE CONNECTION
+// ==========================
 connectDB();
 
-// Initialize Express app
+// ==========================
+// EXPRESS APP
+// ==========================
 const app = express();
 
 // ==========================
-// MIDDLEWARE
+// SECURITY & MIDDLEWARE
 // ==========================
 
-// Enable JSON parsing
+// Parse JSON
 app.use(express.json());
 
-// CORS: only allow frontend URL or fallback to all
+// CORS Protection
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
-// HTTP request logger (dev/prod)
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-} else {
-  app.use(morgan("tiny"));
-}
+// Request Logger
+app.use(
+  morgan(
+    process.env.NODE_ENV === "development"
+      ? "dev"
+      : "tiny"
+  )
+);
 
 // ==========================
-// ROUTES
+// HEALTH CHECK
 // ==========================
-app.use("/api/vtu", vtuRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/wallet", walletRoutes);
-
-// Root route (health check)
 app.get("/", (req, res) => {
   res.status(200).json({
-    status: "success",
-    message: "🚀 Plex Connect Backend is LIVE & connected to DB",
-    env: process.env.NODE_ENV,
+    name: "Plex Connect API",
+    status: "ONLINE ✅",
+    environment: process.env.NODE_ENV,
+    timestamp: new Date(),
   });
 });
 
 // ==========================
-// ERROR HANDLING
+// API ROUTES
 // ==========================
+app.use("/api/users", userRoutes);
+app.use("/api/vtu", vtuRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/payment", paymentRoutes);
 
-// 404 Route
+// ==========================
+// 404 HANDLER
+// ==========================
 app.use((req, res) => {
-  res.status(404).json({ status: "error", message: "❌ Route not found" });
+  res.status(404).json({
+    status: "error",
+    message: "Route not found",
+  });
 });
 
-// Global Error Handler
+// ==========================
+// GLOBAL ERROR HANDLER
+// ==========================
 app.use((err, req, res, next) => {
-  console.error("💥 Server Error:", err);
+  console.error("💥 GLOBAL ERROR:", err.message);
+
   res.status(err.status || 500).json({
     status: "error",
     message: err.message || "Internal Server Error",
@@ -85,9 +104,17 @@ app.use((err, req, res, next) => {
 // SERVER START
 // ==========================
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🗄️ MongoDB connected: ${!!process.env.DATABASE_URL}`);
-  console.log(`🔑 Paystack key loaded: ${!!process.env.PAYSTACK_SECRET_KEY}`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
+  console.log(`
+=====================================
+🚀 PLEX CONNECT BACKEND STARTED
+=====================================
+🌐 Port: ${PORT}
+🗄 MongoDB: ${!!process.env.DATABASE_URL}
+💳 Paystack Ready: ${!!process.env.PAYSTACK_SECRET_KEY}
+🔗 Frontend: ${process.env.FRONTEND_URL}
+⚙️ Environment: ${process.env.NODE_ENV}
+=====================================
+`);
 });
