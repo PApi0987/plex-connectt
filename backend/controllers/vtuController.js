@@ -10,13 +10,13 @@ import {
 
 
 // ==============================
-// HELPER — WALLET PROCESS
+// WALLET + TRANSACTION ENGINE
 // ==============================
 const processTransaction = async ({
   userId,
   service,
   amount,
-  meta,
+  apiCall,
 }) => {
 
   const user = await User.findById(userId);
@@ -26,20 +26,32 @@ const processTransaction = async ({
   if (user.wallet < amount)
     throw new Error("Insufficient wallet balance");
 
-  // Deduct wallet
+  // Deduct wallet FIRST
   user.wallet -= amount;
   await user.save();
 
-  // Save transaction
-  const tx = await Transaction.create({
-    user: userId,
-    service,
-    amount,
-    status: "success",
-    meta,
-  });
+  try {
+    // Call Provider API
+    const apiResponse = await apiCall();
 
-  return tx;
+    const tx = await Transaction.create({
+      user: userId,
+      service,
+      amount,
+      status: "success",
+      meta: apiResponse,
+    });
+
+    return tx;
+
+  } catch (error) {
+
+    // 🔥 REFUND USER IF API FAILS
+    user.wallet += amount;
+    await user.save();
+
+    throw new Error("Service provider failed");
+  }
 };
 
 
@@ -49,22 +61,19 @@ const processTransaction = async ({
 // ==============================
 export const buyAirtimeController = async (req, res) => {
   try {
-    const { network, phone, amount } = req.body;
 
-    const apiResponse = await buyAirtime({
-      network,
-      phone,
-      amount,
-    });
+    const { network, phone, amount } = req.body;
 
     const tx = await processTransaction({
       userId: req.user._id,
       service: "airtime",
       amount,
-      meta: apiResponse,
+      apiCall: () =>
+        buyAirtime({ network, phone, amount }),
     });
 
     res.json({
+      success: true,
       message: "Airtime purchase successful",
       tx,
     });
@@ -75,27 +84,25 @@ export const buyAirtimeController = async (req, res) => {
 };
 
 
+
 // ==============================
 // 📡 DATA
 // ==============================
 export const buyDataController = async (req, res) => {
   try {
-    const { network, phone, plan, amount } = req.body;
 
-    const apiResponse = await buyData({
-      network,
-      phone,
-      plan,
-    });
+    const { network, phone, plan, amount } = req.body;
 
     const tx = await processTransaction({
       userId: req.user._id,
       service: "data",
       amount,
-      meta: apiResponse,
+      apiCall: () =>
+        buyData({ network, phone, plan }),
     });
 
     res.json({
+      success: true,
       message: "Data purchase successful",
       tx,
     });
@@ -106,27 +113,29 @@ export const buyDataController = async (req, res) => {
 };
 
 
+
 // ==============================
 // ⚡ ELECTRICITY
 // ==============================
 export const buyElectricityController = async (req, res) => {
   try {
-    const { disco, meterNumber, amount } = req.body;
 
-    const apiResponse = await buyElectricity({
-      disco,
-      meterNumber,
-      amount,
-    });
+    const { disco, meterNumber, amount } = req.body;
 
     const tx = await processTransaction({
       userId: req.user._id,
       service: "electricity",
       amount,
-      meta: apiResponse,
+      apiCall: () =>
+        buyElectricity({
+          disco,
+          meterNumber,
+          amount,
+        }),
     });
 
     res.json({
+      success: true,
       message: "Electricity token generated",
       tx,
     });
@@ -137,27 +146,34 @@ export const buyElectricityController = async (req, res) => {
 };
 
 
+
 // ==============================
 // 📺 CABLE TV
 // ==============================
 export const buyCableController = async (req, res) => {
   try {
-    const { provider, smartcard, packageName, amount } = req.body;
 
-    const apiResponse = await buyCableTV({
+    const {
       provider,
       smartcard,
       packageName,
-    });
+      amount,
+    } = req.body;
 
     const tx = await processTransaction({
       userId: req.user._id,
       service: "cable",
       amount,
-      meta: apiResponse,
+      apiCall: () =>
+        buyCableTV({
+          provider,
+          smartcard,
+          packageName,
+        }),
     });
 
     res.json({
+      success: true,
       message: "Cable subscription successful",
       tx,
     });
