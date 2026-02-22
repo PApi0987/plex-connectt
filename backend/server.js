@@ -1,5 +1,5 @@
 // ==========================
-// Plex Connect Backend - PRO SERVER
+// PLEX CONNECT PRO SERVER
 // ==========================
 
 import express from "express";
@@ -9,38 +9,27 @@ import morgan from "morgan";
 
 import connectDB from "./config/db.js";
 
-// ==========================
-// ROUTES IMPORT
-// ==========================
+// ROUTES
 import vtuRoutes from "./routes/vtuRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 
-// ==========================
-// ENV CONFIG
-// ==========================
 dotenv.config();
 
 // ==========================
-// DATABASE CONNECTION
+// DATABASE
 // ==========================
 connectDB();
 
-// ==========================
-// EXPRESS APP
-// ==========================
 const app = express();
 
 // ==========================
-// SECURITY & MIDDLEWARE
+// MIDDLEWARE
 // ==========================
-
-// Parse JSON
 app.use(express.json());
 
-// CORS Protection
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "*",
@@ -48,12 +37,11 @@ app.use(
   })
 );
 
-// Request Logger
 app.use(
   morgan(
     process.env.NODE_ENV === "development"
       ? "dev"
-      : "tiny"
+      : "combined"
   )
 );
 
@@ -65,12 +53,13 @@ app.get("/", (req, res) => {
     name: "Plex Connect API",
     status: "ONLINE ✅",
     environment: process.env.NODE_ENV,
-    timestamp: new Date(),
+    uptime: process.uptime(),
+    time: new Date(),
   });
 });
 
 // ==========================
-// API ROUTES
+// ROUTES
 // ==========================
 app.use("/api/users", userRoutes);
 app.use("/api/vtu", vtuRoutes);
@@ -79,12 +68,12 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoutes);
 
 // ==========================
-// 404 HANDLER
+// 404
 // ==========================
 app.use((req, res) => {
   res.status(404).json({
-    status: "error",
-    message: "Route not found",
+    success: false,
+    message: "Endpoint not found",
   });
 });
 
@@ -92,28 +81,30 @@ app.use((req, res) => {
 // GLOBAL ERROR HANDLER
 // ==========================
 app.use((err, req, res, next) => {
-  console.error("💥 GLOBAL ERROR:", err.message);
+  console.error("🔥 GLOBAL ERROR:", err.stack);
 
   res.status(err.status || 500).json({
-    status: "error",
-    message: err.message || "Internal Server Error",
+    success: false,
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Server Error"
+        : err.message,
   });
 });
 
 // ==========================
-// SERVER START
+// START SERVER
 // ==========================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`
 =====================================
-🚀 PLEX CONNECT BACKEND STARTED
+🚀 PLEX CONNECT BACKEND RUNNING
 =====================================
 🌐 Port: ${PORT}
-🗄 MongoDB: ${!!process.env.DATABASE_URL}
-💳 Paystack Ready: ${!!process.env.PAYSTACK_SECRET_KEY}
-🔗 Frontend: ${process.env.FRONTEND_URL}
+🗄 MongoDB: CONNECTED
+💳 Paystack: ${!!process.env.PAYSTACK_SECRET_KEY}
 ⚙️ Environment: ${process.env.NODE_ENV}
 =====================================
 `);
